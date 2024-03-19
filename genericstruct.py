@@ -2,21 +2,17 @@
 import numpy as np
 import sys
 
+MAXLEN = 80
+PFX = '    '
+
 class GenericStruct:
     """
     KCW version of Mike Blatchley's GenericStruct()
     All methods currently work for singly nested GenericStructs but can't have 3 layers of nested structs (yet)
     """
 
-    MAXLEN = 80
-    PFX = '    '
-
-    def __init__(self):
-        self.win = False
-        if sys.platform == 'win32': self.win = True
-
     def repr(self, pfx=None):
-        if pfx is None: pfx = GenericStruct.PFX
+        if pfx is None: pfx = PFX
         outstr= ''
         kys= self.keys()
         kyslen = len(max(kys, key=len))
@@ -27,12 +23,12 @@ class GenericStruct:
             valstr= str(val)
             if 'GenericStruct' in str(type(val)):
                 outstr += '%s%s%s\n' % (pfx, ky, fillstr)
-                outstr += val.repr(GenericStruct.PFX + pfx)[:-1]
+                outstr += val.repr(PFX + pfx)[:-1]
             else:
                 if isinstance(val, np.ndarray):
                     if len(val.shape) > 1:
                         valstr= "numpy array of shape %s"%str(val.shape)
-                    elif len(valstr) > GenericStruct.MAXLEN:
+                    elif len(valstr) > MAXLEN:
                         if len(val) > 4 and isinstance(val[0],(float,int,np.integer)):
                             valstr= '[%g,%g,...,%g,%g]_len=%d'%(val[0],val[1],val[-2],val[-1],len(val))
                         else:
@@ -139,10 +135,12 @@ class GenericStruct:
                 if not tokens or len(tokens) < 2 or tokens[0][0] == '#': continue # this line is either empty, invalid, or a comment
                 k = tokens[0]
                 if len(k) > 4 and k[-4:].lower() == '_win':
-                    if not self.win: continue       # skip windows entry if not windows
+                    if sys.platform != 'win32':
+                        continue                    # skip windows entry if not windows
                     k = k[0:-4]                     # else discard _win from name
                 elif len(k) > 5 and k[-5:].lower() == '_unix':
-                    if self.win: continue           # skip unix entry if windows
+                    if sys.platform == 'win32':
+                        continue                    # skip unix entry if windows
                     k = k[0:-5]                     # else discard _unix from name
                 if tokens[1][0] == '[':
                     value_str = line[line.index('[')+1:line.rindex(']')]
@@ -166,7 +164,7 @@ class GenericStruct:
 
 def get_rep(val):
     if isinstance(val, str):
-        if len(val) > GenericStruct.MAXLEN/4:
+        if len(val) > MAXLEN/4:
             return val[0:8]+'---'
     else:
         return val
