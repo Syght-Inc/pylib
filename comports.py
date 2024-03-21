@@ -48,23 +48,40 @@ class ComPorts:
     if not quiet and not port_cnt:
       print('  NONE')
 
-  def select(self, devs=([],[]), sers=([],[]), pids=([],[]), vids=([],[])):
-    print('ComPorts.select', devs, sers, pids, vids)
+  def select(self, devs=([],[]), sers=([],[]), pids=([],[]), vids=([],[]), quiet=True):
+    """
+    Select Communication Ports
+
+    The selection critera may be device name, serial number, product identifier, or
+    vendor identifier.  Each of these critera are further divided by exclusion or inclusion.
+    Each selection critera parameter is a list of two lists.  The first list contains critera
+    for inclusion and the second list contains critera for exclusion.  Exclusions override
+    inclusions.
+    @param devs   Device Name Selection Critera
+    @param sers   Serial Number Selection Critera
+    @param pids   Product ID Selection Critera
+    @param vids   Vendor ID Selection Critera
+    @param quiet  Suppress Output Flag
+    @returns List of Selected Port Names
+    """
+    if not quiet:
+      print('ComPorts.select', devs, sers, pids, vids)
     ports = []
     for i in range(len(self.__devices)):
       dev = self.__devices[i]
       ser = self.__serials[i]
       pid = self.__pids[i]
       vid = self.__vids[i]
-      print('ComPorts.select dev:', dev)
-      if devs[0] and dev not in devs[0]: continue
-      if sers[0] and ser not in sers[0]: continue
-      if pids[0] and pid not in pids[0]: continue
-      if vids[0] and vid not in vids[0]: continue
+      if not quiet:
+        print('ComPorts.select dev:', dev)
       if devs[1] and dev in devs[1]: continue
       if sers[1] and ser in sers[1]: continue
       if pids[1] and pid in pids[1]: continue
       if vids[1] and vid in vids[1]: continue
+      if devs[0] and dev not in devs[0]: continue
+      if sers[0] and ser not in sers[0]: continue
+      if pids[0] and pid not in pids[0]: continue
+      if vids[0] and vid not in vids[0]: continue
       ports.append(dev)
     return ports
 

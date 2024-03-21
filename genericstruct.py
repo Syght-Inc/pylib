@@ -132,6 +132,7 @@ class GenericStruct:
         return value
 
     def read_file(self, fn, debug=False):
+        if not fn: return                         # allow an empty file name
         if not os.path.isfile(fn):
             print('GenericStruct.read_file: file not found:', fn)
             return

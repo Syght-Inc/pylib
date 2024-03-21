@@ -2,6 +2,7 @@
 #======================================= SYGHT, Inc. CONFIDENTIAL =================================================
 
 import os
+from pickle import NONE
 import sys
 
 class Paths:
@@ -9,12 +10,17 @@ class Paths:
     def __init__(self):
         ## Windows OS Flag
         self.__win_os = False
-        if sys.platform == 'win32': self.__win_os = True
         ## Home Path
-        self.__home_path = os.environ['HOME']
+        self.__home_path = None
         ## Local Path
-        self.__local_path = os.path.join(self.__home_path, '.local') # assume unix
-        if self.__win_os: self.__local_path = os.path.join(self.__home_path, 'AppData\\Roaming')
+        self.__local_path = NONE
+        if sys.platform == 'win32':
+            self.__win_os = True
+            self.__home_path = os.environ['HOMEPATH']
+            self.__local_path = os.path.join(self.__home_path, 'AppData\\Roaming')
+        else:
+            self.__home_path = os.environ['HOME']
+            self.__local_path = os.path.join(self.__home_path, '.local')
 
     @property
     def home(self):
