@@ -1,4 +1,7 @@
 
+#======================================= SYGHT, Inc. CONFIDENTIAL =================================================
+
+import os
 import numpy as np
 import sys
 
@@ -129,6 +132,9 @@ class GenericStruct:
         return value
 
     def read_file(self, fn, debug=False):
+        if not os.path.isfile(fn):
+            print('GenericStruct.read_file: file not found:', fn)
+            return
         with open(fn, 'r') as fil:
             for line in fil:
                 tokens = line.split()

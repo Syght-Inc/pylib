@@ -4,6 +4,10 @@
 import serial.tools.list_ports as st
 
 class ComPorts:
+
+  ## Format String
+  FMT = '  {:15s} {:15s} {:10s} {:10s} {:25s} {}' # dev ser vid pid mfg desc
+
   def __init__(self):
     ## List of Descriptions
     self.__descs = []
@@ -26,15 +30,23 @@ class ComPorts:
     self.__serials.append(serial)
     self.__vids.append(vid)
 
-  def scan(self):
+  def scan(self, quiet=True):
+    if not quiet:
+      print('Comports.scan:')
+      print(ComPorts.FMT.format('DEVICE', 'SERIAL NUMBER', 'VENDOR ID', 'PROD ID', 'MANUFACTURER', 'DESCRIPTION'))
+      port_cnt = 0
     for port in st.comports():
-      print('ComPorts.scan', port.device, port.description, port.manufacturer, port.serial_number, port.pid, port.vid)
+      if not quiet:
+        print(ComPorts.FMT.format(str(port.device), str(port.serial_number), str(port.vid), str(port.pid), str(port.manufacturer), str(port.description)))
+        port_cnt += 1
       self.__devices.append(port.device)
       self.__descs.append(port.description)
       self.__mfgs.append(port.manufacturer)
       self.__serials.append(port.serial_number)
       self.__pids.append(port.pid)
       self.__vids.append(port.vid)
+    if not quiet and not port_cnt:
+      print('  NONE')
 
   def select(self, devs=([],[]), sers=([],[]), pids=([],[]), vids=([],[])):
     print('ComPorts.select', devs, sers, pids, vids)
@@ -56,3 +68,6 @@ class ComPorts:
       ports.append(dev)
     return ports
 
+if __name__ == "__main__":
+  cp = ComPorts()
+  cp.scan(quiet=False)

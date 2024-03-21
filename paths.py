@@ -5,6 +5,25 @@ import os
 import sys
 
 class Paths:
+
+    def __init__(self):
+        ## Windows OS Flag
+        self.__win_os = False
+        if sys.platform == 'win32': self.__win_os = True
+        ## Home Path
+        self.__home_path = os.environ['HOME']
+        ## Local Path
+        self.__local_path = os.path.join(self.__home_path, '.local') # assume unix
+        if self.__win_os: self.__local_path = os.path.join(self.__home_path, 'AppData\\Roaming')
+
+    @property
+    def home(self):
+        return self.__home_path
+
+    @property
+    def local(self):
+        return self.__local_path
+
     @property
     def paths(self):
         """

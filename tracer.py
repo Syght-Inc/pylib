@@ -1,3 +1,6 @@
+
+#======================================= SYGHT, Inc. CONFIDENTIAL =================================================
+
 from time import perf_counter
 
 class Tracer:
