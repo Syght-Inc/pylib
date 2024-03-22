@@ -71,10 +71,10 @@ class ComPorts:
         return is_gimbal
 
     def scan(self, query=False, quiet=True):
+        port_cnt = len(self.__devices)
         if not quiet:
             print('Comports.scan:')
             print(ComPorts.FMT.format('DEVICE', 'APP', 'SERIAL NUMBER', 'VENDOR ID', 'PROD ID', 'MANUFACTURER', 'DESCRIPTION'))
-            port_cnt = 0
         for port in st.comports():
             self.__devices.append(port.device)
             self.__descs.append(port.description)
@@ -112,7 +112,7 @@ class ComPorts:
         @returns List of Selected Port Names
         """
         if not quiet:
-            print('ComPorts.select', devs, sers, pids, vids)
+            print('ComPorts.select', apps, devs, sers, pids, vids)
         ports = []
         for i in range(len(self.__devices)):
             app = self.__apps[i]
@@ -121,13 +121,13 @@ class ComPorts:
             pid = self.__pids[i]
             vid = self.__vids[i]
             if not quiet:
-                print('ComPorts.select dev:', dev)
+                print('ComPorts.select dev:', dev, app, ser, vid, pid)
             if app in apps[1]: continue
             if dev in devs[1]: continue
             if ser in sers[1]: continue
             if pid in pids[1]: continue
             if vid in vids[1]: continue
-            if apps[0] and not app in apps[0]: continue
+            if apps[0] and app not in apps[0]: continue
             if devs[0] and dev not in devs[0]: continue
             if sers[0] and ser not in sers[0]: continue
             if pids[0] and pid not in pids[0]: continue
