@@ -21,6 +21,12 @@ class ComPorts:
     self.__pids = []
     ## List of Vendor Identifiers
     self.__vids = []
+    ## List of Restricted Serial Numbers
+    self.__restricted_serials = []
+    ## List of Restricted Serial Numbers
+    self.__restricted_pids = [4026]
+    ## List of Restricted Serial Numbers
+    self.__restricted_vids = [1453]
 
   def add(self, device, desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0):
     self.__devices.append(device)
@@ -82,6 +88,9 @@ class ComPorts:
       if sers[0] and ser not in sers[0]: continue
       if pids[0] and pid not in pids[0]: continue
       if vids[0] and vid not in vids[0]: continue
+      if ser in self.__restricted_serials and ser not in sers[0]: continue
+      if pid in self.__restricted_pids and pid not in pids[0]: continue
+      if vid in self.__restricted_vids and vid not in vids[0]: continue
       ports.append(dev)
     return ports
 
