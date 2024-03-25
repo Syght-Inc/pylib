@@ -57,6 +57,10 @@ class DebugMsg:
     if self.__enabled:
       print(self.dmh(nl, 'sent ', func), args)
 
+  def msg_tmo(self, func, *args, nl='', always=False):
+    if self.__enabled or always:
+      print(self.dmh(nl, 'tmo  ', func), '***** TIMEOUT *****', args)
+
   def dmh(self, nl, desc, func):
     return '{}{: >15.6f} {} {}.{}:'.format(nl, self.__time(), desc, self.__name, func)
 
