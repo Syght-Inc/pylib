@@ -33,7 +33,8 @@ class ComPorts:
         ## List of Restricted Serial Numbers
         self.__restricted_vids = [1453]
 
-    def add(self, device, app='UNKNOWN', desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0):
+    def add(self, device, app='UNKNOWN', desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0, query=False):
+        index = len(self.__apps)
         self.__apps.append(app)
         self.__devices.append(device)
         self.__descs.append(desc)
@@ -41,6 +42,8 @@ class ComPorts:
         self.__pids.append(pid)
         self.__serials.append(serial)
         self.__vids.append(vid)
+        if query:
+            self.query(device, index)
 
     def allmotion(self, dev):
         is_allmotion = False
@@ -70,6 +73,29 @@ class ComPorts:
                 is_gimbal = True
         return is_gimbal
 
+    def syght(self, dev):
+        is_syght = False
+        try:
+            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.1)
+        except:
+            port = None
+        if port:
+            port.reset_input_buffer()
+            port.write(b'\r')
+            rcvd = port.readline()
+            if b'Syght' in rcvd:
+                is_syght = True
+            port.readline()
+        return is_syght
+ 
+    def query(self, port, index):
+        if self.gimbal(port.device):
+            self.__apps[index] = 'GIMBAL'
+        elif self.allmotion(port.device):
+            self.__apps[index] = 'ALLMOTION'
+        elif self.syght(port.device):
+            self.__apps[index] = 'SYGHT'
+
     def scan(self, query=False, quiet=True):
         port_cnt = len(self.__devices)
         if not quiet:
@@ -83,11 +109,7 @@ class ComPorts:
             self.__pids.append(port.pid)
             self.__vids.append(port.vid)
             self.__apps.append('UNKNOWN')
-            if query:
-                if self.gimbal(port.device):
-                    self.__apps[port_cnt] = 'GIMBAL'
-                elif self.allmotion(port.device):
-                    self.__apps[port_cnt] = 'ALLMOTION'
+            if query:  self.query(port, port_cnt)
             if not quiet:
                 print(ComPorts.FMT.format(str(port.device), self.__apps[port_cnt], str(port.serial_number),
                                           str(port.vid), str(port.pid), str(port.manufacturer), str(port.description)))
