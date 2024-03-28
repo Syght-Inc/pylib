@@ -1450,3 +1450,172 @@ def search_sequence_numpy(arr,seq):
         return np.where(np.convolve(M,np.ones((Nseq),dtype=int))>0)[0]
     else:
         return []            
+
+
+def argmax_2d(vals):
+    """
+    Ref: https://stackoverflow.com/questions/3584243/get-the-position-of-the-largest-value-in-a-multi-dimensional-numpy-array
+    """
+    dum= np.argmax(vals)
+    return np.unravel_index(dum, vals.shape)
+
+def argmin_2d(vals):
+    """
+    Ref: https://stackoverflow.com/questions/3584243/get-the-position-of-the-largest-value-in-a-multi-dimensional-numpy-array
+    """
+    dum= np.argmin(vals)
+    return np.unravel_index(dum, vals.shape)
+
+def stairstep(xs, ys):
+    """
+    return new x,y arrays that when plotted show a stair step version of the curve represented by the original arrays. 
+    no assumptions are made regarding constant step size
+    """
+    nxs= np.zeros( 2*len(xs)-1, np.float)
+    nys= np.zeros( 2*len(xs)-1, np.float)
+    nxs[::2]= xs
+    nys[::2]= ys
+    nxs[1::2]= xs[1:]
+    nys[1::2]= ys[:-1]
+    return nxs, nys
+
+
+def transform_vectors_2d(inis, fins=None, dx=0, dy=0, theta_deg=0):
+    """
+    rotation of points (by theta_deg) and translation (by dx and dy) transformation within a fixed coord system (this is not rotation of coord system)
+    if fins=None just transform the points in inis
+    return the coords of points in new coord system that is shifted by (dx,dy) and rotated by theta_deg
+    """
+    from ray3d import get_rot_matrix
+    #get affine 2D translation matrix (regular translation matrix is not linear in cartesian coords...must use affine version)
+    nn= np.ones( (3,3), np.float )
+    nn[1,0],nn[0,1]= (0,0)
+    nn[2,0],nn[2,1]= (0,0)
+    nn[0,2]= dx
+    nn[1,2]= dy
+    #get affine rotation matrix
+    mm= get_rot_matrix(theta_deg*np.pi/180.0, 'z')
+    #mm= mm[:2,:2]   #do NOT reduce to 2D (see https://en.wikipedia.org/wiki/Transformation_matrix regarding affine transformations)
+    #get net transformation matrix
+    pp= np.matmul(nn,mm)    #order matters!
+    #need to add a column of ones to vectors for affine trans
+    size= np.shape(inis)[0]
+    ninis= np.hstack( (inis,np.ones( (size,1), np.float)) )
+    if fins is not None:
+        nfins= np.hstack( (fins,np.ones( (size,1), np.float)) )
+    #finally can transform the input rays
+    ninis= np.matmul(pp, ninis.transpose()).transpose()
+    if fins is not None:
+        nfins= np.matmul(pp, nfins.transpose()).transpose()
+        return ninis[:,:-1], nfins[:,:-1]   #need to slice off extra dimension that was there just for the math
+    else:
+        return ninis[:,:-1]
+    
+
+def get_rot_matrix(theta_rad, axis='x'):
+    """
+    return matrix for rotating a point about an axis in a fixed coord system
+    Ref: https://www.meccanismocomplesso.org/en/3d-rotations-and-euler-angles-in-python/
+    returns type np.ndarray so you have to use np.matmul() to multiply rotation matrix by location array using matrix multiplication rules
+    """
+    import math as m
+    theta= theta_rad
+    if axis == 'x':
+        return np.array([[ 1, 0           , 0           ],
+                   [ 0, m.cos(theta),-m.sin(theta)],
+                   [ 0, m.sin(theta), m.cos(theta)]])
+    elif axis == 'y':
+        return np.array([[ m.cos(theta), 0, m.sin(theta)],
+                   [ 0           , 1, 0           ],
+                   [-m.sin(theta), 0, m.cos(theta)]])
+    elif axis == 'z':
+        return np.array([[ m.cos(theta), -m.sin(theta), 0 ],
+                   [ m.sin(theta), m.cos(theta) , 0 ],
+                   [ 0           , 0            , 1 ]])
+
+    
+def transform_points_3d(vals, axis='x', dx=0, dy=0, dz=0, theta_deg=0, trans_mat=None, mat_only=False):
+    """
+    rotation and translation transformation on vals array, shape=(N,3) which are points in 3D cartesian space
+    if trans_mat is not None then just apply this transformation (typically the inverse of a previous trans)
+    if mat_only is True then just return the calculated transformation (vals are ignored)
+    axis specifies the rotation axis only
+    """
+    pp= trans_mat
+    if pp is None:
+        #get affine 3D TRANSLATION matrix (regular translation matrix is not linear in cartesian coords...must use affine version)
+        nn= np.diag( [1.0,1.0,1.0,1.0] )   #create 4x4 identity array of floats
+        nn[0,3]= dx   
+        nn[1,3]= dy
+        nn[2,3]= dz
+        #get 3D affine ROTATION matrix 
+        mm= get_rot_matrix(theta_deg*np.pi/180.0, axis)
+        mm= np.vstack( (mm,np.zeros(3)) )
+        mm= np.vstack( (mm.transpose(),np.zeros(4)) ).transpose()
+        mm[3,3]= 1.0
+        #get net transformation matrix
+        pp= np.matmul(nn,mm)   #not sure about commutativity here but this order works
+    if mat_only:
+        return pp
+    #need to add a column of ones to vectors for affine trans
+    size= np.shape(vals)[0]
+    nvals= np.hstack( (vals,np.ones( (size,1), np.float)) )
+    #finally can transform the input rays
+    nvals= np.matmul(pp, nvals.transpose()).transpose()
+    return nvals[:,:-1]    
+
+def find_max_y(xs, ys, quad_fit=False, verbose=True, fignum=None):
+    imax= np.argmax(ys)
+    if quad_fit:
+        ii= min(2, imax, len(ys)-imax-1)  #typically will do quadratic fit to 5 values (or at least 3)
+        if ii == 0:
+            tabPrint("*****WARNING: Can't do quad fit.  Array too small or extreme value at end point*****", verbose)
+            return xs[imax], ys[imax]            
+        dum= FitLineToPlot(xs[imax-ii:imax+ii+1], ys[imax-ii:imax+ii+1], 2, Label='theta', Fignum=fignum)
+        tabPrint("Using quadratic fit to get best theta value...Rsq=%5.3f"%dum.Rsq, verbose)
+        x_max= -dum.Coeffs[1]/(2*dum.Coeffs[0])
+        y_max= dum.Coeffs[0]*x_max**2 + dum.Coeffs[1]*x_max + dum.Coeffs[2]
+        return x_max, y_max
+    else:
+        return xs[imax], ys[imax]
+
+    
+def find_min_y(xs, ys, quad_fit=False, verbose=True, fignum=None):
+    nys= -1*np.array(ys)
+    return find_max_y(xs, nys, quad_fit=quad_fit, verbose=verbose, fignum=fignum)
+
+
+def plot_text_box(text_str, ax=0, loc_pcts=(30,10)):
+    """loc_pcts is a tuple specifying the lower left hand corner location of the text box on the plot.  Set to None to ignore
+       set fignum=ax"""
+    text_str= str(text_str)
+    if ax is None or ax == 0:
+        fig= plt.figure()
+        ax= fig.add_subplot(111)
+        ax.plot(np.arange(5), np.arange(5), color='white')  #make invisible line just to set some min and max coords
+    elif type(ax) is int:
+        fig= plt.figure(ax)
+        ax= fig.add_subplot(111)        
+    xmin, xmax= ax.set_xlim()
+    ymin, ymax= ax.set_ylim()
+    ax.text(xmin+0.01*loc_pcts[0]*(xmax-xmin), ymin+0.01*loc_pcts[1]*(ymax-ymin), text_str, color='black', fontsize=8, \
+                     bbox=dict(facecolor='blue', alpha=0.3))
+
+
+def plot_plane(point, normal, width=10, color='green', ret_vals=False, ax=0):
+    d = -point.dot(normal)
+
+    # create x,y
+    xs, ys = np.meshgrid(np.arange(point[0]-width, point[0]+width), np.arange(point[1]-width, point[1]+width))
+
+    # calculate corresponding z
+    zs = (-normal[0] * xs - normal[1] * ys - d) * 1. /normal[2]
+    
+    # plot the surface
+    if ax == 0:
+        ax= GetAx(three_d=True)
+    ax.plot_surface(xs, ys, zs, alpha=0.2, color=color)
+    ax.scatter([point[0]], [point[1]], [point[2]], 'o', s=10, color=color)
+    if ret_vals:
+        return xs, ys, zs
+    
