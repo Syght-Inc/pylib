@@ -70,6 +70,21 @@ class ComPorts:
                 is_gimbal = True
         return is_gimbal
 
+    def syght(self, dev):
+        is_syght = False
+        try:
+            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.1)
+        except:
+            port = None
+        if port:
+            port.reset_input_buffer()
+            port.write(b'\r')
+            rcvd = port.readline()
+            if b'Syght' in rcvd:
+                is_syght = True
+            port.readline()
+        return is_syght
+ 
     def scan(self, query=False, quiet=True):
         port_cnt = len(self.__devices)
         if not quiet:
@@ -88,6 +103,8 @@ class ComPorts:
                     self.__apps[port_cnt] = 'GIMBAL'
                 elif self.allmotion(port.device):
                     self.__apps[port_cnt] = 'ALLMOTION'
+                elif self.syght(port.device):
+                    self.__apps[port_cnt] = 'SYGHT'
             if not quiet:
                 print(ComPorts.FMT.format(str(port.device), self.__apps[port_cnt], str(port.serial_number),
                                           str(port.vid), str(port.pid), str(port.manufacturer), str(port.description)))
