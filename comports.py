@@ -3,6 +3,7 @@
 
 import serial
 import serial.tools.list_ports as st
+import sys
 
 class ComPorts:
 
@@ -33,7 +34,7 @@ class ComPorts:
         ## List of Restricted Serial Numbers
         self.__restricted_vids = [1453]
 
-    def add(self, device, app='UNKNOWN', desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0, query=False):
+    def add(self, device, app='UNKNOWN', desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0, query=False, quiet=True):
         index = len(self.__apps)
         self.__apps.append(app)
         self.__devices.append(device)
@@ -43,7 +44,9 @@ class ComPorts:
         self.__serials.append(serial)
         self.__vids.append(vid)
         if query:
-            self.query(device, index)
+            if not quiet:
+                print(ComPorts.FMT.format('DEVICE', 'APP', 'SERIAL NUMBER', 'VENDOR ID', 'PROD ID', 'MANUFACTURER', 'DESCRIPTION'))
+            self.query(index, quiet)
 
     def allmotion(self, dev):
         is_allmotion = False
@@ -88,13 +91,17 @@ class ComPorts:
             port.readline()
         return is_syght
  
-    def query(self, port, index):
-        if self.gimbal(port.device):
+    def query(self, index, quiet=True):
+        port = self.__devices[index]
+        if self.gimbal(port):
             self.__apps[index] = 'GIMBAL'
-        elif self.allmotion(port.device):
+        elif self.allmotion(port):
             self.__apps[index] = 'ALLMOTION'
-        elif self.syght(port.device):
+        elif self.syght(port):
             self.__apps[index] = 'SYGHT'
+        if not quiet:
+            print(ComPorts.FMT.format(str(port), self.__apps[index], str(self.__serials[index]),
+                       str(self.__vids[index]), str(self.__pids[index]), str(self.__mfgs[index]), str(self.__descs[index])))
 
     def scan(self, query=False, quiet=True):
         port_cnt = len(self.__devices)
@@ -109,10 +116,8 @@ class ComPorts:
             self.__pids.append(port.pid)
             self.__vids.append(port.vid)
             self.__apps.append('UNKNOWN')
-            if query:  self.query(port, port_cnt)
-            if not quiet:
-                print(ComPorts.FMT.format(str(port.device), self.__apps[port_cnt], str(port.serial_number),
-                                          str(port.vid), str(port.pid), str(port.manufacturer), str(port.description)))
+            if query: 
+                self.query(port_cnt, quiet)
             port_cnt += 1
         if not quiet and not port_cnt:
             print('    NONE')
@@ -163,4 +168,6 @@ class ComPorts:
 
 if __name__ == "__main__":
     cp = ComPorts()
+    if sys.platform != 'win32':
+        cp.add('/dev/ttyTHS0', query=True, quiet=False)
     cp.scan(query=True, quiet=False)
