@@ -79,13 +79,19 @@ class ComPorts:
     def syght(self, dev):
         is_syght = False
         try:
-            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.1)
+            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.25)
         except:
+            print('syght no port')
             port = None
         if port:
             port.reset_input_buffer()
-            port.write(b'\r')
+            port.send_break(0.020)
             rcvd = port.readline()
+            print('syght break rcvd:', rcvd)
+            if b'Syght' not in rcvd:
+                port.write(b'\r')
+                rcvd = port.readline()
+                print('syght cr rcvd:', rcvd)
             if b'Syght' in rcvd:
                 is_syght = True
             port.readline()
