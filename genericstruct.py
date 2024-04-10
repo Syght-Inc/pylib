@@ -123,12 +123,36 @@ class GenericStruct:
                     print(ky, self.__dict__[ky])
         return vals
 
-    def GetValueFromToken(self, token):
-        try: value = int(token)
-        except (ValueError, TypeError):
-            try: value = float(token)
+    def GetValueFromToken(self, token, debug=False):
+        if token[0] == '[':
+            value = []
+            value_str = token[1:token.rindex(']')]
+            tokens = value_str.split()
+            if debug: print('GetValueFromToken token: ', tokens)
+            if tokens[0][0] == '[':
+                list_tokens = value_str.split(']')
+                for token in list_tokens:
+                    if debug: print('token: ', token)
+                    if not token:
+                        continue
+                    t = token.split('[')[1].strip()
+                    if debug: print('t before: ', t)
+                    if t:
+                        t = '[' + t + ']'
+                        if debug: print('t after: ', t)
+                        list_value = self.GetValueFromToken(t, debug)
+                        if debug: print('list_value: ', list_value)
+                        value.append(list_value)
+            else:
+                for token in tokens:
+                    v = self.GetValueFromToken(token, debug)
+                    value.append(v)
+        else:
+            try: value = int(token)
             except (ValueError, TypeError):
-                value = token
+                try: value = float(token)
+                except (ValueError, TypeError):
+                    value = token
         return value
 
     def read_file(self, fn, debug=False):
@@ -138,8 +162,11 @@ class GenericStruct:
             return
         with open(fn, 'r') as fil:
             for line in fil:
-                tokens = line.split()
-                if not tokens or len(tokens) < 2 or tokens[0][0] == '#': continue # this line is either empty, invalid, or a comment
+                line_no_comment = line.split('#')[0].replace(',',' ').replace("'",' ').strip()  #removes comments, replaces , and ' with spaces, then strips spaces
+                if debug: print('line_no_comment: ', line_no_comment)
+                tokens = line_no_comment.split()
+                if debug: print("tokens: ", tokens)
+                if len(tokens) < 2: continue # this line is either empty, invalid, or a comment
                 k = tokens[0]
                 if len(k) > 4 and k[-4:].lower() == '_win':
                     if sys.platform != 'win32':
@@ -150,20 +177,18 @@ class GenericStruct:
                         continue                    # skip unix entry if windows
                     k = k[0:-5]                     # else discard _unix from name
                 if tokens[1][0] == '[':
-                    value_str = line[line.index('[')+1:line.rindex(']')]
-                    tokens = value_str.split()
-                    v = []
-                    for token in tokens:
-                        value = self.GetValueFromToken(token)
-                        v.append(value)
+                    value_str = line_no_comment[line_no_comment.index('['):line_no_comment.rindex(']')+1]
+                    if debug: print('value_str: ', value_str)
+                    v = self.GetValueFromToken(value_str, debug)
+                    if debug: print('v: ', v)
                 else:
                     if tokens[1][0] == "'":
-                        self.set_value(k, line.split("'")[1]) # value is a single-quoted string
+                        self.set_value(k, line_no_comment.split("'")[1]) # value is a single-quoted string
                         continue
                     if tokens[1][0] == '"':
-                        self.set_value(line.split('"')[1]) # value is a double-quoted string
+                        self.set_value(line_no_comment.split('"')[1]) # value is a double-quoted string
                         continue
-                    v = self.GetValueFromToken(tokens[1])
+                    v = self.GetValueFromToken(tokens[1], debug)
                 self.set_value(k, v)
         if debug:
             print(self)
