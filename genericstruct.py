@@ -153,6 +153,7 @@ class GenericStruct:
                 try: value = float(token)
                 except (ValueError, TypeError):
                     value = token
+                    if token.lower() == 'none': value = None
         return value
 
     def read_file(self, fn, debug=False):

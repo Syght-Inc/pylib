@@ -145,7 +145,12 @@ class ComPorts:
         @returns List of Selected Port Names
         """
         if not quiet:
-            print('ComPorts.select', apps, devs, sers, pids, vids)
+            print('ComPorts.select')
+            print('   apps:', apps)
+            print('   devs:', devs)
+            print('   sers:', sers)
+            print('   pids:', pids)
+            print('   vids:', vids)
         ports = []
         for i in range(len(self.__devices)):
             app = self.__apps[i]
