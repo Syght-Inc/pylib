@@ -63,7 +63,7 @@ class DebugMsg:
     self.__msg(func, '*TMO*', args, nl=nl)
 
   def dmh(self, nl, desc, func):
-    return '{}{: >15.6f} {} {}.{}:'.format(nl, self.__time(), desc, self.__name, func)
+    return '{}{: >15.6f} {}.{} {}:'.format(nl, self.__time(), self.__name, func, desc)
 
   def clear_trc(self):
     self.__trc = []

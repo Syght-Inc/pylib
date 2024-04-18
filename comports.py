@@ -133,7 +133,7 @@ class ComPorts:
                     self.__apps[index] = ComPorts.GIMBAL
                     break
                 if self.allmotion(port):
-                    self.__apps[index] = SerComm.ALLMOTION
+                    self.__apps[index] = ComPorts.ALLMOTION
                     break
             if self.__vids[index] not in self.__restricted_vids and self.__pids[index] not in self.__restricted_pids:
                 self.syght(index)
