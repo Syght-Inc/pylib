@@ -1,14 +1,22 @@
 
 #======================================= SYGHT, Inc. CONFIDENTIAL =================================================
 
+import os
 import serial
 import serial.tools.list_ports as st
 import sys
 
 class ComPorts:
 
+    ALLMOTION = 'ALLMOTION'
+    GIMBAL = 'GIMBAL'
+    SYGHT = 'SYGHT'
+
+    GIMBAL_PID = 4026
+    GIMBAL_VID = 1453
+
     ## Format String
-    FMT = '  {:15s} {:10s} {:15.13s} {:10s} {:10s} {:25s} {}' # dev app ser vid pid mfg desc
+    FMT = '  {:15s} {:20s} {:15.13s} {:10s} {:10s} {:25s} {}' # dev app ser vid pid mfg desc
 
     def __init__(self):
         ## List of Applications
@@ -26,13 +34,11 @@ class ComPorts:
         ## List of Vendor Identifiers
         self.__vids = []
         ## List of Restricted Applications
-        self.__restricted_apps = ['GIMBAL']
-        ## List of Restricted Serial Numbers
-        self.__restricted_serials = []
-        ## List of Restricted Serial Numbers
-        self.__restricted_pids = [4026]
-        ## List of Restricted Serial Numbers
-        self.__restricted_vids = [1453]
+        self.__restricted_apps = [ComPorts.GIMBAL]
+        ## List of Restricted Product Identifiers
+        self.__restricted_pids = [ComPorts.GIMBAL_PID]
+        ## List of Restricted Vendor Identifiers
+        self.__restricted_vids = [ComPorts.GIMBAL_VID]
 
     def add(self, device, app='UNKNOWN', desc='NONE', mfg='NONE', serial='NONE', pid=0, vid=0, query=False, quiet=True):
         index = len(self.__apps)
@@ -76,35 +82,62 @@ class ComPorts:
                 is_gimbal = True
         return is_gimbal
 
-    def syght(self, dev):
-        is_syght = False
+    def syght(self, dev_index):
+        dev = self.__devices[dev_index]
         try:
-            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.25)
+            port = serial.Serial(port=dev, baudrate=921600, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO, timeout=0.1)
         except:
-            print('syght no port')
             port = None
-        if port:
-            port.reset_input_buffer()
-            port.send_break(0.020)
-            rcvd = port.readline()
-            print('syght break rcvd:', rcvd)
-            if b'Syght' not in rcvd:
+        app = 'UNKNOWN'
+        app_token_count = 0
+        try_count = 0
+        while port and try_count < 3:
+            try_count += 1
+            rcvd = port.read(1024).decode(errors='replace').upper()
+            tokens = rcvd.split()
+            tokens_len = len(tokens)
+            try:
+                index = tokens.index(ComPorts.SYGHT)
+            except ValueError:
+                index = -1
+            if index >= 0:
+                index_last = index + 1
+                token_count = 1
+                while index_last < tokens_len and token_count < 3:
+                    if tokens[index_last] == '>':
+                        break
+                    index_last += 1
+                    token_count += 1
+                if token_count >= app_token_count:
+                    app_token_count = token_count
+                    app = ' '.join(tokens[index:index_last])
+            if app_token_count:
+                break
+            if '>' in rcvd:
+                app_token_count = 1
+                app = ComPorts.SYGHT
+                break
+            if try_count <= 2:
                 port.write(b'\r')
-                rcvd = port.readline()
-                print('syght cr rcvd:', rcvd)
-            if b'Syght' in rcvd:
-                is_syght = True
-            port.readline()
-        return is_syght
- 
+                continue
+            port.timeout = 1.5
+            port.send_break()
+        self.__apps[dev_index] = app
+        return app_token_count != 0
+
     def query(self, index, quiet=True):
         port = self.__devices[index]
-        if self.gimbal(port):
-            self.__apps[index] = 'GIMBAL'
-        elif self.allmotion(port):
-            self.__apps[index] = 'ALLMOTION'
-        elif self.syght(port):
-            self.__apps[index] = 'SYGHT'
+        while True:
+            if 'stmicro' not in self.__mfgs[index].lower():
+                if ComPorts.GIMBAL not in self.__apps and self.gimbal(port):
+                    self.__apps[index] = ComPorts.GIMBAL
+                    break
+                if self.allmotion(port):
+                    self.__apps[index] = SerComm.ALLMOTION
+                    break
+            if self.__vids[index] not in self.__restricted_vids and self.__pids[index] not in self.__restricted_pids:
+                self.syght(index)
+            break
         if not quiet:
             print(ComPorts.FMT.format(str(port), self.__apps[index], str(self.__serials[index]),
                        str(self.__vids[index]), str(self.__pids[index]), str(self.__mfgs[index]), str(self.__descs[index])))
@@ -165,15 +198,19 @@ class ComPorts:
             if ser in sers[1]: continue
             if pid in pids[1]: continue
             if vid in vids[1]: continue
-            if apps[0] and app not in apps[0]: continue
+            if app.startswith(ComPorts.SYGHT):
+                app_selected = False
+                for app_req in apps[0]:
+                    if app_req.startswith(ComPorts.SYGHT):
+                        app_selected = True
+                        break
+                if not app_selected: continue
+            elif apps[0] and app not in apps[0]: continue
             if devs[0] and dev not in devs[0]: continue
             if sers[0] and ser not in sers[0]: continue
             if pids[0] and pid not in pids[0]: continue
             if vids[0] and vid not in vids[0]: continue
             if app in self.__restricted_apps and app not in apps[0]: continue
-            if ser in self.__restricted_serials and ser not in sers[0]: continue
-            if pid in self.__restricted_pids and pid not in pids[0]: continue
-            if vid in self.__restricted_vids and vid not in vids[0]: continue
             ports.append(dev)
         return ports
 
