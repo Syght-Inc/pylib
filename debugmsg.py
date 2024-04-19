@@ -68,21 +68,37 @@ class DebugMsg:
   def clear_trc(self):
     self.__trc = []
 
-  def print_trc(self):
+  def print_trc(self, count=None):
     """
     Print Trace Entries
 
     Format and print the entries in the trace list.
     """
 
-    if self.__trc:
-      time_prev = self.__trc[0][0]
-      for trc in self.__trc:
+    while True:
+      first = 0
+      last = len(self.__trc)
+      print('DebugMsg: {} {} {}'.format(first, last, self))
+      if not last:
+        break
+      if count is not None and count:
+        if count > 0:
+          if count < last:
+            last = count
+        else:
+          first = last + count
+          if first < 0:
+            first = 0
+      print('DebugMsg: {} {}'.format(first, last))
+      time_prev = self.__trc[first][0]
+      for i in range(first, last):
+        trc = self.__trc[i]
         time_this = trc[0]
         time_str = '{:9.7f}'.format(time_this)
         elapsed = time_this - time_prev
         time_prev = time_this
         print('{: >15.6f}'.format(elapsed), time_str, trc[1:])
+      break
 
   def trace(self, func, desc, *args):
     if self.__trc_enabled:
