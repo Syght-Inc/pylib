@@ -4,10 +4,12 @@
 from time import perf_counter
 
 class DebugMsg:
-  def __init__(self, name):
+  def __init__(self, name, time_offset=0.0):
     self.__enabled = False
+    self.__entry_lvl = 0
+    self.__indent = 0
     self.__name = name
-    self.__time = perf_counter
+    self.__time_offset = time_offset
     self.__trc = []
     self.__trc_enabled = False
 
@@ -21,9 +23,13 @@ class DebugMsg:
       self.__trc_enabled = enabled
     return self.__trc_enabled
 
-  def name(self, name=None):
-    if name:
+  def name(self, name=None, indent=None, time_offset=0.0):
+    if name is not None:
       self.__name = name
+    if indent is not None:
+      self.__indent = indent
+    if time_offset is not None:
+      self.__time_offset = time_offset
     return self.__name
 
   def __msg(self, func, desc, *args, nl=''):
@@ -48,10 +54,13 @@ class DebugMsg:
     self.__msg(func, '*ERR*', args, nl=nl)
 
   def msg_entry(self, func, *args, nl=''):
+    self.__entry_lvl += 1
     self.__msg(func, 'entry', args, nl=nl)
 
   def msg_exit(self, func, *args, nl=''):
     self.__msg(func, 'exit', args, nl=nl)
+    if self.__entry_lvl > 0:
+      self.__entry_lvl -= 1
 
   def msg_rcvd(self, func, *args, nl=''):
     self.__msg(func, 'rcvd', args, nl=nl)
@@ -63,7 +72,8 @@ class DebugMsg:
     self.__msg(func, '*TMO*', args, nl=nl)
 
   def dmh(self, nl, desc, func):
-    return '{}{: >15.6f} {}.{} {}:'.format(nl, self.__time(), self.__name, func, desc)
+    return '{}{: >15.6f} {}{}.{} {}:'.format(nl, self.__time_offset + perf_counter(),
+                                             ' ' * (self.__indent + self.__entry_lvl), self.__name, func, desc)
 
   def clear_trc(self):
     self.__trc = []
