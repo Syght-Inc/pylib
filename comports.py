@@ -1,10 +1,10 @@
 
 #======================================= SYGHT, Inc. CONFIDENTIAL =================================================
 
-import os
 import serial
 import serial.tools.list_ports as st
 import sys
+import time
 
 class ComPorts:
 
@@ -91,8 +91,9 @@ class ComPorts:
         app = 'UNKNOWN'
         app_token_count = 0
         try_count = 0
-        while port and try_count < 3:
+        while port and try_count < 2:
             try_count += 1
+            port.write(b'\r')
             rcvd = port.read(1024).decode(errors='replace').upper()
             tokens = rcvd.split()
             tokens_len = len(tokens)
@@ -117,11 +118,9 @@ class ComPorts:
                 app_token_count = 1
                 app = ComPorts.SYGHT
                 break
-            if try_count <= 2:
-                port.write(b'\r')
-                continue
             port.timeout = 1.5
-            port.send_break()
+            port.send_break(0.25)
+            time.sleep(1.0)
         self.__apps[dev_index] = app
         return app_token_count != 0
 
@@ -129,9 +128,10 @@ class ComPorts:
         port = self.__devices[index]
         while True:
             if 'stmicro' not in self.__mfgs[index].lower():
-                if ComPorts.GIMBAL not in self.__apps and self.gimbal(port):
-                    self.__apps[index] = ComPorts.GIMBAL
-                    break
+                if ComPorts.GIMBAL not in self.__apps:
+                    if self.gimbal(port):
+                        self.__apps[index] = ComPorts.GIMBAL
+                        break
                 if self.allmotion(port):
                     self.__apps[index] = ComPorts.ALLMOTION
                     break
@@ -143,10 +143,11 @@ class ComPorts:
                        str(self.__vids[index]), str(self.__pids[index]), str(self.__mfgs[index]), str(self.__descs[index])))
 
     def scan(self, query=False, quiet=True):
-        port_cnt = len(self.__devices)
-        if not quiet:
-            print('Comports.scan:')
+        if sys.platform != 'win32':
+            self.add('/dev/ttyTHS0', query=query, quiet=quiet)
+        elif not quiet:
             print(ComPorts.FMT.format('DEVICE', 'APP', 'SERIAL NUMBER', 'VENDOR ID', 'PROD ID', 'MANUFACTURER', 'DESCRIPTION'))
+        port_cnt = len(self.__devices)
         for port in st.comports():
             self.__devices.append(port.device)
             self.__descs.append(port.description)
@@ -216,6 +217,4 @@ class ComPorts:
 
 if __name__ == "__main__":
     cp = ComPorts()
-    if sys.platform != 'win32':
-        cp.add('/dev/ttyTHS0', query=True, quiet=False)
     cp.scan(query=True, quiet=False)
