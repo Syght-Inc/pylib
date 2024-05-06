@@ -82,6 +82,22 @@ class ComPorts:
                 is_gimbal = True
         return is_gimbal
 
+    def dings(self, dev):
+        is_dings = False
+        import minimalmodbus as mmb
+        try:
+            port = mmb.Instrument(dev,1)
+            if port:
+                port.serial.baudrate=9600
+                for ii in range(-1,2): 
+                    val=port.read_register(0x140+ii) 
+                    if val==12345: 
+                        is_dings = True
+                        break
+        except:
+            port = None
+        return is_dings
+
     def syght(self, dev_index):
         dev = self.__devices[dev_index]
         try:

@@ -25,8 +25,8 @@ def GetUniqueSuffix(fname, ftype):
     sfx = 0
     while True:
         if ftype:
-            if sfx: fpath = os.path.join(fname + '_%d' % sfx, ftype)
-            else:   fpath = os.path.join(fname, ftype)
+            if sfx: fpath = fname + '_%d' % sfx + ftype   #fpath = os.path.join(fname + '_%d' % sfx, ftype)
+            else:   fpath = fname+ftype   #fpath = os.path.join(fname, ftype)   #this join outputs fname/ftype, or in my example, ADCcal_date/.pkl
             if not os.path.exists(fpath): break # path does not exist so use this suffix
             if os.path.isdir(fpath): raise ValueError(fpath + ' IS A FOLDER')
         else:
@@ -35,6 +35,7 @@ def GetUniqueSuffix(fname, ftype):
             if not os.path.exists(fpath): break # path does not exist so use this suffix
             if os.path.isfile(fpath): raise ValueError(fpath + ' IS A FILE')
         sfx += 1
+        print(sfx)
     return sfx
 
 
