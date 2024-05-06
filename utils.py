@@ -34,6 +34,7 @@ def GetUniqueSuffix(fname, ftype):
             else:   fpath = fname
             if not os.path.exists(fpath): break # path does not exist so use this suffix
             if os.path.isfile(fpath): raise ValueError(fpath + ' IS A FILE')
+        #print('fname:', fname, 'fpath:', 'sfx:', sfx)
         sfx += 1
         print(sfx)
     return sfx
@@ -475,14 +476,25 @@ def CSVRead( FileName, FirstRow=0, DType=np.double, Delim=',', Verbose=(0,0)):
     return vals
 
 
-def CSVWrite( filename, a_arr, b_vec=[], path='./', delim=',', mode='w', Verbose=(0,0)):
+def CSVWrite( filename, a_arr, b_vec=[], path='./', delim=',', mode='w', Verbose=(0,0), OvwProtect=True, sfx=None):
     """My function for writing data to a file from numpy arrays.  a_arr can be 1 or 2 dimensional. b_vec must be
     one-dimensional with length equal to number of rows of a_arr.
     """
-    filename= path+filename
-    tabPrint("writing to %s"%filename, Verbose)
+    fname= path+filename
+
+    if fname.lower() == '.csv': raise ValueError('INVALID FILE NAME: ' + fname)
+    fpath = fname
+    if fname[-4:].lower() == '.csv': fpath = fname[0:-4] # remove '.csv'
+    #print('not sfx:', not sfx, 'OvwProtect:', OvwProtect)
+    if not sfx and OvwProtect:
+        sfx = GetUniqueSuffix(fpath, '.csv')
+        #print('fpath:', fpath, 'sfx:', sfx)
+    if sfx: fpath += '_%d' % sfx
+    fpath += '.csv'                             # add file type to name
+
+    print("writing to %s"%fpath)
     #mode shoulde be either "w" or "a"    check for this
-    fh = open(filename, mode)
+    fh = open(fpath, mode)
    
     NumCols= 1
     if len(a_arr.shape) == 2:
