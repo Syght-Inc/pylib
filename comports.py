@@ -11,6 +11,7 @@ class ComPorts:
     ALLMOTION = 'ALLMOTION'
     GIMBAL = 'GIMBAL'
     SYGHT = 'SYGHT'
+    DINGS = 'DINGSMOTOR'
 
     GIMBAL_PID = 4026
     GIMBAL_VID = 1453
@@ -151,6 +152,9 @@ class ComPorts:
                 if self.allmotion(port):
                     self.__apps[index] = ComPorts.ALLMOTION
                     break
+            if self.dings(port):
+                self.__apps[index] = ComPorts.DINGS
+                break
             if self.__vids[index] not in self.__restricted_vids and self.__pids[index] not in self.__restricted_pids:
                 self.syght(index)
             break
