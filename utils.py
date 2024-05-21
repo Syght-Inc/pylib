@@ -61,7 +61,7 @@ def WritePklFile(fname, obj, convert_to_dict=True, protocol=3, OvwProtect=True, 
         tabstr= '\t'*tab_cnt
         print("%sWriting to Pkl file %s"%(tabstr,fpath))
         
-    dbfile = open(fpath, 'w+b')
+    dbfile = open(os.path.expanduser(fpath), 'w+b') 
     if convert_to_dict:
         if "GenericStruct" in str(type(obj)):
             if Verbose:
@@ -82,7 +82,7 @@ def ReadPklFile(fname, convert_dicts=True, Verbose=True):
         fname += '.pkl'
     if Verbose:
         print("Reading from Pkl file %s"%fname)
-    dbfile = open(fname, 'r+b')
+    dbfile = open(os.path.expanduser(fname), 'r+b')
     obj= pickle.load(dbfile)   #protocol is detected automatically
     dbfile.close()
     if convert_dicts:
@@ -391,9 +391,9 @@ def TextFileWrite(Fname, Text, Append=True):
         Fname +=  '.txt'
 
     if Append:
-        ff= open(Fname,"a")#append mode
+        ff= open(os.path.expanduser(Fname),"a")#append mode
     else:
-        ff= open(Fname,"w")
+        ff= open(os.path.expanduser(Fname),"w")
     ff.write(Text)
     ff.close()
         
@@ -408,7 +408,7 @@ def CSVRead( FileName, FirstRow=0, DType=np.double, Delim=',', Verbose=(0,0)):
     """
     import csv
     errmsg = 'crabby_pants'
-    fh = open(FileName,'r')
+    fh = open(os.path.expanduser(FileName),'r')
     # do one pass through the file to determine the number of columnc and rows needed
     cr = csv.reader(fh, delimiter=Delim, skipinitialspace=True)   #I also added skipinitspc=true
     LineNum = 0
@@ -494,7 +494,7 @@ def CSVWrite( filename, a_arr, b_vec=[], path='./', delim=',', mode='w', Verbose
 
     print("writing to %s"%fpath)
     #mode shoulde be either "w" or "a"    check for this
-    fh = open(fpath, mode)
+    fh = open(os.path.expanduser(fpath), mode)
    
     NumCols= 1
     if len(a_arr.shape) == 2:
@@ -755,7 +755,7 @@ def CSVWriteLists( filename, a_lst, b_lst=[], delim=',', mode='w'):
     """
 
     #mode shoulde be either "w" or "a"    check for this
-    fh = open(filename, mode)
+    fh = open(os.path.expanduser(filename), mode)
 
     NumCols= 1
     NumRows = len(a_lst)    
